@@ -1,17 +1,20 @@
-// ── LAPISAN DATA (DATABASE LOKAL) ──
+// ── LAPISAN DATA (DATABASE LOKAL + SINKRONISASI TERPUSAT) ──
 // Aplikasi ini adalah SPA statis (React + Vite) tanpa server sendiri, jadi
 // "database"-nya memakai localStorage di browser pengguna: setiap kali
 // seseorang menyelesaikan tes, hasilnya otomatis tersimpan permanen di
 // perangkat itu (tidak hilang saat refresh/tutup tab), dan bisa ditarik/
 // diekspor kapan saja lewat Admin Panel di halaman utama.
 //
-// CATATAN PENTING: localStorage sifatnya PER PERANGKAT/BROWSER, bukan
-// terpusat. Kalau nanti butuh mengumpulkan data dari SEMUA pengguna ke satu
-// tempat (misalnya untuk riset atau dashboard tim), langkah selanjutnya
-// adalah menyambungkan fungsi saveSubmission() di bawah ini ke backend
-// sungguhan seperti Supabase, Firebase, atau Google Sheets API.
+// SEKALIGUS, tiap submission juga dikirim ke Google Sheets (lihat
+// sheetsSync.ts) supaya data dari SEMUA pengguna/perangkat terkumpul di
+// satu tempat terpusat — bukan cuma tersimpan lokal di device masing-masing.
+//
+// CATATAN: localStorage tetap dipertahankan sebagai cadangan/cache lokal
+// (misal untuk Admin Panel & export CSV cepat tanpa perlu buka Google
+// Sheets), sementara Google Sheets jadi sumber data gabungan semua user.
 
 import type { Segment } from './App';
+import { syncToGoogleSheets } from './sheetsSync';
 
 export interface Submission {
   id: string;
@@ -47,7 +50,11 @@ function writeAll(rows: Submission[]): void {
   }
 }
 
-/** Simpan satu hasil tes baru. Dipanggil otomatis begitu user selesai menjawab. */
+/**
+ * Simpan satu hasil tes baru. Dipanggil otomatis begitu user selesai
+ * menjawab. Menyimpan ke localStorage (device ini) DAN mengirim ke Google
+ * Sheets (terpusat, semua device) sekaligus.
+ */
 export function saveSubmission(data: Omit<Submission, 'id' | 'timestamp'>): Submission {
   const record: Submission = {
     ...data,
@@ -57,6 +64,19 @@ export function saveSubmission(data: Omit<Submission, 'id' | 'timestamp'>): Subm
   const all = readAll();
   all.push(record);
   writeAll(all);
+
+  // Kirim ringkasan ke Google Sheets — supaya data seluruh pengguna
+  // (dari device manapun) terkumpul di satu spreadsheet yang sama.
+syncToGoogleSheets({
+  name: record.name,
+  age: record.age,
+  segment: record.segment,
+  score: record.score,
+  level: record.level,
+  exposure: record.exposure,
+  answers: record.answers,
+});
+
   return record;
 }
 

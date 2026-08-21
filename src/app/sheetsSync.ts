@@ -6,7 +6,7 @@
 // data SEMUA pengguna (dari device manapun) terkumpul di satu tempat.
 
 const GOOGLE_SHEETS_URL =
-  'https://script.google.com/macros/s/AKfycbzlGwyJTXklVZ8VZKnZSk5mIORAAVEGC0jLAlAj5qrtVC6D-WhkJNIhtE_M1Vb8Wk3f/exec';
+  'https://script.google.com/macros/s/AKfycbyaN1GEwurMu7d2bG4IgrRaSKq72eJdsPo5rOS0F8gsCRM5ZyPhoXpguRu7m-IfcPC5Jw/exec';
 
 export interface SheetsPayload {
   name: string;
@@ -15,6 +15,7 @@ export interface SheetsPayload {
   score: number;
   level: string;
   exposure: number;
+  answers: Record<string, number>;
 }
 
 /**
