@@ -1,1 +1,0 @@
-df = pd.read_csv(r"C:\Users\Surya\OneDrive\Dokumen\HESTI TRIU\viirs-snpp_2024_Indonesia.csv")
