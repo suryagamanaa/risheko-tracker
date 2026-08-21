@@ -1,17 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
-import type { Segment, RiskResult, Tip, Profile } from '../App';
+import type { Segment, RiskResult, Tip } from '../App';
 
 interface Props {
   segment: Segment;
-  profile: Profile;
   risk: RiskResult;
   tips: Tip[];
   onReset: () => void;
 }
 
-export function ResultScreen({ segment, profile, risk, tips, onReset }: Props) {
+export function ResultScreen({ segment, risk, tips, onReset }: Props) {
   const [displayAmt, setDisplayAmt] = useState(0);
   const [ctaDone, setCtaDone] = useState(false);
   const animatedRef = useRef(false);
@@ -62,7 +61,7 @@ export function ResultScreen({ segment, profile, risk, tips, onReset }: Props) {
 
   const cfg = levelConfig[level];
 
-  const MICROSITE_URL = 'https://microsite-she-up.vercel.app/';
+  const MICROSITE_URL = 'https://www.figma.com/make/2qcvFTV1AOJvpvur44UDAq/Microsite-SHE-UP-?code-node-id=0-6&p=f&t=jdDur7GWARjljKEH-0&fullscreen=1';
 
   const ctaMap: Record<string, { note: string; label: string }> = {
     'SIAGA-A': {
@@ -70,7 +69,7 @@ export function ResultScreen({ segment, profile, risk, tips, onReset }: Props) {
       label: 'Yuk buka Microsite SHEaga untuk tingkatkan proteksi usahamu →',
     },
     'WASPADA-A': {
-      note: 'Ada beberapa celah risiko di usahamu. Temukan edukasi & solusi asuransi yang tepat untuk ibu rumah tangga seperti kamu.',
+      note: 'Ada beberapa celah risiko di usahamu. Temukan edukasi & solusi asuransi yang tepat untuk mompreneur seperti kamu.',
       label: 'Yuk buka Microsite SHEaga untuk lindungi usahamu →',
     },
     'GENTING-A': {
@@ -93,13 +92,6 @@ export function ResultScreen({ segment, profile, risk, tips, onReset }: Props) {
 
   const ctaCfg = ctaMap[`${level}-${segment}`] ?? ctaMap['WASPADA-B'];
 
-  // Personalisasi teks pakai nama panggilan, biar hasilnya terasa buat dia sendiri.
-  // Nama di sini sudah berupa "nama panggilan" (bukan nama lengkap), jadi dipakai
-  // apa adanya tanpa dipotong ke kata pertama.
-  const callName = profile.name?.trim() || '';
-  const personalize = (text: string) =>
-    callName ? `${callName}, ${text.charAt(0).toLowerCase()}${text.slice(1)}` : text;
-
   return (
     <div style={{ minHeight: '100vh', background: '#F4F5F7', paddingBottom: 56 }}>
       {/* Result header */}
@@ -115,7 +107,7 @@ export function ResultScreen({ segment, profile, risk, tips, onReset }: Props) {
         <div style={{ position: 'absolute', left: -16, bottom: -16, width: 110, height: 110, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
 
         <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 10, letterSpacing: '2.5px', textTransform: 'uppercase', marginBottom: 10, position: 'relative' }}>
-          {profile.name ? `Hasil Cek Risiko · ${profile.name}` : 'Hasil Cek Risiko'}
+          Hasil Cek Risiko
         </div>
 
         {/* Level badge */}
@@ -143,7 +135,7 @@ export function ResultScreen({ segment, profile, risk, tips, onReset }: Props) {
           transition={{ delay: 0.35 }}
           style={{ color: 'rgba(255,255,255,0.82)', fontSize: 13, lineHeight: 1.55, margin: 0, position: 'relative' }}
         >
-          {personalize(cfg.tagline)}
+          {cfg.tagline}
         </motion.p>
       </div>
 
@@ -259,7 +251,7 @@ export function ResultScreen({ segment, profile, risk, tips, onReset }: Props) {
           </div>
 
           <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.82)', lineHeight: 1.65, marginBottom: 14, position: 'relative' }}>
-            {personalize(ctaCfg.note)}
+            {ctaCfg.note}
           </p>
 
           <AnimatePresence mode="wait">
@@ -371,7 +363,7 @@ export function ResultScreen({ segment, profile, risk, tips, onReset }: Props) {
         </div>
 
         <p style={{ textAlign: 'center', fontSize: 10.5, color: '#9CA3AF', lineHeight: 1.6 }}>
-          🔒 Semua jawaban dihitung & tersimpan aman di perangkatmu, tidak dikirim ke server luar mana pun.
+          🔒 Semua jawaban dihitung di perangkatmu & tidak tersimpan ke server mana pun.
         </p>
       </div>
     </div>

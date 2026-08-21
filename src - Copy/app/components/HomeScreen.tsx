@@ -1,8 +1,6 @@
-import { useState } from 'react';
 import { motion } from 'motion/react';
 import { ChevronRight, Zap, Lock, Sparkles } from 'lucide-react';
 import type { Segment } from '../App';
-import { AdminPanel } from './AdminPanel';
 
 // ── KOMPONEN LOGO SHE-UP! (Borderless & Lebar Fleksibel) ──
 function SheUpLogo() {
@@ -98,8 +96,6 @@ interface Props {
 }
 
 export function HomeScreen({ onSelectSegment }: Props) {
-  const [showAdmin, setShowAdmin] = useState(false);
-
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#F4F8FC' }}>
       {/* ── Astra-style blue gradient header ── */}
@@ -205,7 +201,7 @@ export function HomeScreen({ onSelectSegment }: Props) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 22 }}>
           <SegmentCard
             emoji="🏠"
-            title="Ibu Rumah Tangga"
+            title="Mompreneur"
             desc="Ibu rumah tangga pelaku UMKM atau usaha rumahan"
             tags={['UMKM', 'Usaha Rumahan', 'Ibu Produktif']}
             accentColor="#0050A0"
@@ -256,7 +252,7 @@ export function HomeScreen({ onSelectSegment }: Props) {
             Cara kerjanya
           </div>
           {[
-            { num: '1', title: 'Isi nama & kategorimu', desc: 'Nama, usia, lalu Ibu Rumah Tangga atau Woman Youth', color: '#0050A0' },
+            { num: '1', title: 'Pilih kategorimu', desc: 'Mompreneur atau Woman Youth', color: '#0050A0' },
             { num: '2', title: 'Jawab 5 pertanyaan', desc: 'Seputar kondisi finansial kamu', color: '#00A3E0' },
             { num: '3', title: 'Dapatkan analisis', desc: 'Level risiko + 3 tips personal instan', color: '#0A3A82' },
           ].map((step, i) => (
@@ -278,25 +274,10 @@ export function HomeScreen({ onSelectSegment }: Props) {
           ))}
         </div>
 
-        <p style={{ textAlign: 'center', fontSize: 10.5, color: '#94A3B8', lineHeight: 1.6, marginBottom: 14 }}>
-          🔒 Semua jawaban dihitung di perangkatmu & tersimpan aman secara lokal.<br />Tidak ada data yang dikirim ke server luar mana pun.
+        <p style={{ textAlign: 'center', fontSize: 10.5, color: '#94A3B8', lineHeight: 1.6 }}>
+          🔒 Semua jawaban dihitung langsung di perangkatmu.<br />Tidak ada data yang tersimpan ke server mana pun.
         </p>
-
-        <div style={{ textAlign: 'center' }}>
-          <button
-            onClick={() => setShowAdmin(true)}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: '#94A3B8', fontSize: 10.5, fontWeight: 600,
-              textDecoration: 'underline', padding: 6,
-            }}
-          >
-            📊 Lihat data tersimpan (khusus admin)
-          </button>
-        </div>
       </div>
-
-      <AdminPanel open={showAdmin} onClose={() => setShowAdmin(false)} />
     </div>
   );
 }

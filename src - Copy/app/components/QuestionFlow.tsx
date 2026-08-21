@@ -1,26 +1,23 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronLeft, User } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import { QUESTIONS, NUMERIC_QUESTIONS } from '../data';
-import type { Segment, Question, NumericQuestion, Profile } from '../App';
+import type { Segment, Question, NumericQuestion } from '../App';
 
 interface Props {
   segment: Segment;
   qIndex: number;
-  profile: Profile;
   onAnswer: (key: string, weight: number) => void;
   onSliderSubmit: (value: number) => void;
-  onProfileSubmit: (name: string, age: number) => void;
   onBack: () => void;
 }
 
-export function QuestionFlow({ segment, qIndex, profile, onAnswer, onSliderSubmit, onProfileSubmit, onBack }: Props) {
+export function QuestionFlow({ segment, qIndex, onAnswer, onSliderSubmit, onBack }: Props) {
   const questions = QUESTIONS[segment];
   const numericQ = NUMERIC_QUESTIONS[segment];
-  const totalQs = questions.length + 2; // +1 profil (nama & umur), +1 slider
-  const isProfile = qIndex === 0;
-  const isSlider = qIndex === totalQs - 1;
-  const currentQ = !isProfile && !isSlider ? questions[qIndex - 1] : null;
+  const totalQs = questions.length + 1;
+  const isSlider = qIndex >= questions.length;
+  const currentQ = !isSlider ? questions[qIndex] : null;
 
   const progressPct = Math.round((qIndex / totalQs) * 100);
 
@@ -82,18 +79,6 @@ export function QuestionFlow({ segment, qIndex, profile, onAnswer, onSliderSubmi
       {/* Animated content */}
       <div style={{ padding: '20px 16px 48px' }}>
         <AnimatePresence mode="wait">
-          {isProfile && (
-            <motion.div
-              key="profile"
-              initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -18 }}
-              transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
-            >
-              <ProfileCard defaultName={profile.name} defaultAge={profile.age} onSubmit={onProfileSubmit} />
-            </motion.div>
-          )}
-
           {currentQ && (
             <motion.div
               key={`q-${qIndex}`}
@@ -131,7 +116,7 @@ function QuestionCard({ q, onPick }: { q: Question; onPick: (weight: number) => 
     if (selected !== null) return;
     setSelected(i);
     setShowFact(true);
-    setTimeout(() => onPick(weight), 4000);
+    setTimeout(() => onPick(weight), 530);
   };
 
   return (
@@ -270,130 +255,6 @@ function QuestionCard({ q, onPick }: { q: Question; onPick: (weight: number) => 
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
-  );
-}
-
-function ProfileCard({
-  defaultName, defaultAge, onSubmit,
-}: {
-  defaultName: string;
-  defaultAge: number;
-  onSubmit: (name: string, age: number) => void;
-}) {
-  const [name, setName] = useState(defaultName || '');
-  const [age, setAge] = useState(defaultAge ? String(defaultAge) : '');
-  const [touched, setTouched] = useState(false);
-
-  const trimmedName = name.trim();
-  const ageNum = Number(age);
-  const nameValid = trimmedName.length >= 2;
-  const ageValid = age !== '' && ageNum >= 10 && ageNum <= 80;
-  const isValid = nameValid && ageValid;
-
-  const handleSubmit = () => {
-    setTouched(true);
-    if (!isValid) return;
-    onSubmit(trimmedName, ageNum);
-  };
-
-  return (
-    <div>
-      {/* Header */}
-      <div style={{
-        borderRadius: 24, padding: '22px 20px 20px', marginBottom: 16,
-        background: 'linear-gradient(135deg, #0A3A82 0%, #0050A0 100%)',
-        position: 'relative', overflow: 'hidden',
-        boxShadow: '0 8px 28px rgba(10,58,130,0.38)',
-      }}>
-        <div style={{ position: 'absolute', right: 14, top: 10, fontSize: 80, opacity: 0.16, lineHeight: 1, userSelect: 'none', transform: 'rotate(8deg)' }}>
-          👋
-        </div>
-        <div style={{ color: 'rgba(255,255,255,0.68)', fontSize: 9.5, fontWeight: 700, letterSpacing: '2.2px', textTransform: 'uppercase', marginBottom: 10 }}>
-          Kenalan Dulu Yuk
-        </div>
-        <h2 style={{ fontFamily: 'Sora, sans-serif', fontWeight: 700, fontSize: 20, color: 'white', lineHeight: 1.32, margin: '0 0 10px 0' }}>
-          Siapa nama & berapa usiamu?
-        </h2>
-        <p style={{ color: 'rgba(255,255,255,0.72)', fontSize: 12.5, lineHeight: 1.58, margin: 0 }}>
-          Biar hasil & rekomendasinya nanti bisa lebih pas buat kamu.
-        </p>
-      </div>
-
-      {/* Form card */}
-      <div style={{ background: 'white', borderRadius: 22, padding: '22px 20px', boxShadow: '0 2px 14px rgba(0,0,0,0.07)' }}>
-        {/* Nama */}
-        <div style={{ marginBottom: 18 }}>
-          <label style={{ display: 'block', fontSize: 12.5, fontWeight: 600, color: '#1A1A2E', marginBottom: 8 }}>
-            Nama panggilan
-          </label>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 10,
-            border: `2px solid ${touched && !nameValid ? '#EF4444' : '#E2E8F0'}`,
-            borderRadius: 14, padding: '12px 14px', transition: 'border-color 0.2s',
-          }}>
-            <User size={17} color="#94A3B8" />
-            <input
-              type="text"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              placeholder="Contoh: Ibu Sri"
-              style={{ flex: 1, border: 'none', outline: 'none', fontSize: 14.5, color: '#1A1A2E', fontFamily: 'Inter, sans-serif' }}
-            />
-          </div>
-          {touched && !nameValid && (
-            <div style={{ fontSize: 11, color: '#EF4444', marginTop: 5 }}>Isi minimal 2 huruf ya.</div>
-          )}
-        </div>
-
-        {/* Umur */}
-        <div style={{ marginBottom: 22 }}>
-          <label style={{ display: 'block', fontSize: 12.5, fontWeight: 600, color: '#1A1A2E', marginBottom: 8 }}>
-            Usia (tahun)
-          </label>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 10,
-            border: `2px solid ${touched && !ageValid ? '#EF4444' : '#E2E8F0'}`,
-            borderRadius: 14, padding: '12px 14px', transition: 'border-color 0.2s',
-          }}>
-            <span style={{ fontSize: 17 }}>🎂</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              value={age}
-              onChange={e => setAge(e.target.value)}
-              placeholder="Contoh: 34"
-              min={10}
-              max={80}
-              style={{ flex: 1, border: 'none', outline: 'none', fontSize: 14.5, color: '#1A1A2E', fontFamily: 'Inter, sans-serif' }}
-            />
-          </div>
-          {touched && !ageValid && (
-            <div style={{ fontSize: 11, color: '#EF4444', marginTop: 5 }}>Masukkan usia antara 10–80 tahun.</div>
-          )}
-        </div>
-
-        {/* Submit button */}
-        <motion.button
-          onClick={handleSubmit}
-          whileTap={{ scale: 0.97 }}
-          style={{
-            width: '100%', padding: '16px',
-            borderRadius: 15, border: 'none', cursor: 'pointer',
-            background: 'linear-gradient(135deg, #0050A0 0%, #00A3E0 100%)',
-            color: 'white', fontFamily: 'Sora, sans-serif',
-            fontWeight: 700, fontSize: 15.5,
-            boxShadow: '0 5px 18px rgba(0,80,160,0.38)',
-            opacity: isValid || !touched ? 1 : 0.85,
-          }}
-        >
-          Lanjut ke Pertanyaan →
-        </motion.button>
-
-        <p style={{ textAlign: 'center', fontSize: 10.5, color: '#94A3B8', marginTop: 12, lineHeight: 1.5 }}>
-          🔒 Data ini cuma tersimpan di perangkatmu, tidak dibagikan ke pihak luar.
-        </p>
-      </div>
     </div>
   );
 }

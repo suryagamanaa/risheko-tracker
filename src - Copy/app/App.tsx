@@ -5,15 +5,9 @@ import { QuestionFlow } from './components/QuestionFlow';
 import { ScanningScreen } from './components/ScanningScreen';
 import { ResultScreen } from './components/ResultScreen';
 import { computeRisk, computeTips } from './data';
-import { saveSubmission } from './storage';
 
 export type Segment = 'A' | 'B';
 export type Phase = 'home' | 'questions' | 'scanning' | 'result';
-
-export interface Profile {
-  name: string;
-  age: number;
-}
 
 export interface QuestionOption {
   label: string;
@@ -63,20 +57,12 @@ export default function App() {
   const [segment, setSegment] = useState<Segment | null>(null);
   const [qIndex, setQIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
-  const [profile, setProfile] = useState<Profile>({ name: '', age: 0 });
 
   const handleSelectSegment = (seg: Segment) => {
     setSegment(seg);
     setAnswers({});
-    // Kalau nama sudah pernah diisi sebelumnya (mis. setelah "Ulangi cek"),
-    // lewati langkah profil dan langsung ke pertanyaan pertama.
-    setQIndex(profile.name.trim() ? 1 : 0);
+    setQIndex(0);
     setPhase('questions');
-  };
-
-  const handleProfileSubmit = (name: string, age: number) => {
-    setProfile({ name: name.trim(), age });
-    setQIndex(prev => prev + 1);
   };
 
   const handleAnswer = (key: string, weight: number) => {
@@ -85,24 +71,10 @@ export default function App() {
   };
 
   const handleSliderSubmit = (value: number) => {
-    if (!segment) return;
     const nKey = segment === 'A' ? 'omzet' : 'income';
-    const finalAnswers = { ...answers, [nKey]: value };
-    setAnswers(finalAnswers);
+    setAnswers(prev => ({ ...prev, [nKey]: value }));
     setPhase('scanning');
-    setTimeout(() => {
-      const risk = computeRisk(segment, finalAnswers);
-      saveSubmission({
-        name: profile.name || 'Anonim',
-        age: profile.age || 0,
-        segment,
-        answers: finalAnswers,
-        score: risk.score,
-        level: risk.level,
-        exposure: risk.exposure,
-      });
-      setPhase('result');
-    }, 2500);
+    setTimeout(() => setPhase('result'), 2500);
   };
 
   const handleBack = () => {
@@ -148,10 +120,8 @@ export default function App() {
               <QuestionFlow
                 segment={segment}
                 qIndex={qIndex}
-                profile={profile}
                 onAnswer={handleAnswer}
                 onSliderSubmit={handleSliderSubmit}
-                onProfileSubmit={handleProfileSubmit}
                 onBack={handleBack}
               />
             </motion.div>
@@ -179,7 +149,6 @@ export default function App() {
             >
               <ResultScreen
                 segment={segment}
-                profile={profile}
                 risk={computeRisk(segment, answers)}
                 tips={computeTips(segment, answers)}
                 onReset={handleReset}
