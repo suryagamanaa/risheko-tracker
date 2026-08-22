@@ -4,11 +4,13 @@ import { HomeScreen } from './components/HomeScreen';
 import { QuestionFlow } from './components/QuestionFlow';
 import { ScanningScreen } from './components/ScanningScreen';
 import { ResultScreen } from './components/ResultScreen';
-import { computeRisk, computeTips } from './data';
+import { computeRisk, computeInsights } from './data';
 import { saveSubmission } from './storage';
 
 export type Segment = 'A' | 'B';
 export type Phase = 'home' | 'questions' | 'scanning' | 'result';
+export type QuestionTheme = 'A' | 'B' | 'C';
+export type QuestionCategory = 'pengetahuan' | 'sikap' | 'perilaku';
 
 export interface Profile {
   name: string;
@@ -17,18 +19,15 @@ export interface Profile {
 
 export interface QuestionOption {
   label: string;
-  desc: string;
-  weight: number;
-  emoji: string;
+  weight: number; // 0 (paling aman) - 2 (paling berisiko)
 }
 
 export interface Question {
-  key: string;
-  title: string;
-  hint: string;
-  funFact: string;
+  key: string; // pattern: '<tema>_<kategori>', mis. 'A_pengetahuan'
+  theme: QuestionTheme;
+  category: QuestionCategory;
   themeColor: string;
-  emoji: string;
+  title: string;
   opts: QuestionOption[];
 }
 
@@ -43,19 +42,33 @@ export interface NumericQuestion {
   def: number;
 }
 
-export interface Tip {
-  title: string;
-  desc: string;
-  icon: string;
-  color: string;
-}
-
 export interface RiskResult {
-  score: number;
+  totalScore: number; // 0-18, dari 9 pertanyaan x weight maks 2
   level: 'SIAGA' | 'WASPADA' | 'GENTING';
   color: string;
   needleAngle: number;
   exposure: number;
+  categoryScores: { pengetahuan: number; sikap: number; perilaku: number }; // masing² 0-6
+  themeScores: { A: number; B: number; C: number }; // masing² 0-6
+}
+
+export interface InsightItem {
+  title: string;
+  desc: string;
+}
+
+export interface Recommendation {
+  title: string;
+  desc: string;
+  ctaLabel: string;
+  ctaUrl: string;
+  icon: string;
+}
+
+export interface Insights {
+  strengths: InsightItem[];
+  improvements: InsightItem[];
+  recommendations: Recommendation[];
 }
 
 export default function App() {
@@ -97,12 +110,12 @@ export default function App() {
         age: profile.age || 0,
         segment,
         answers: finalAnswers,
-        score: risk.score,
+        score: risk.totalScore,
         level: risk.level,
         exposure: risk.exposure,
       });
       setPhase('result');
-    }, 2500);
+    }, 2000);
   };
 
   const handleBack = () => {
@@ -120,6 +133,8 @@ export default function App() {
     setQIndex(0);
     setAnswers({});
   };
+
+  const risk = segment ? computeRisk(segment, answers) : null;
 
   return (
     <div style={{ minHeight: '100vh', background: '#F4F5F7', fontFamily: 'Inter, sans-serif' }}>
@@ -169,7 +184,7 @@ export default function App() {
             </motion.div>
           )}
 
-          {phase === 'result' && segment && (
+          {phase === 'result' && segment && risk && (
             <motion.div
               key="result"
               initial={{ opacity: 0, y: 20 }}
@@ -180,8 +195,8 @@ export default function App() {
               <ResultScreen
                 segment={segment}
                 profile={profile}
-                risk={computeRisk(segment, answers)}
-                tips={computeTips(segment, answers)}
+                risk={risk}
+                insights={computeInsights(segment, risk)}
                 onReset={handleReset}
               />
             </motion.div>

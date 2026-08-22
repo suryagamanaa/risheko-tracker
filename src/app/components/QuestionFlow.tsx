@@ -123,15 +123,19 @@ export function QuestionFlow({ segment, qIndex, profile, onAnswer, onSliderSubmi
   );
 }
 
+const CATEGORY_LABEL: Record<string, string> = {
+  pengetahuan: 'Pengetahuan',
+  sikap: 'Sikap',
+  perilaku: 'Perilaku',
+};
+
 function QuestionCard({ q, onPick }: { q: Question; onPick: (weight: number) => void }) {
   const [selected, setSelected] = useState<number | null>(null);
-  const [showFact, setShowFact] = useState(false);
 
   const handlePick = (i: number, weight: number) => {
     if (selected !== null) return;
     setSelected(i);
-    setShowFact(true);
-    setTimeout(() => onPick(weight), 4000);
+    setTimeout(() => onPick(weight), 2000);
   };
 
   return (
@@ -146,15 +150,6 @@ function QuestionCard({ q, onPick }: { q: Question; onPick: (weight: number) => 
         overflow: 'hidden',
         boxShadow: `0 8px 28px ${q.themeColor}45`,
       }}>
-        {/* Large background emoji */}
-        <div style={{
-          position: 'absolute', right: 14, top: 10,
-          fontSize: 80, opacity: 0.16, lineHeight: 1, userSelect: 'none',
-          transform: 'rotate(8deg)',
-        }}>
-          {q.emoji}
-        </div>
-        {/* Decorative circle */}
         <div style={{
           position: 'absolute', left: -30, bottom: -30,
           width: 120, height: 120, borderRadius: '50%',
@@ -162,21 +157,18 @@ function QuestionCard({ q, onPick }: { q: Question; onPick: (weight: number) => 
         }} />
 
         <div style={{ color: 'rgba(255,255,255,0.68)', fontSize: 9.5, fontWeight: 700, letterSpacing: '2.2px', textTransform: 'uppercase', marginBottom: 10, position: 'relative' }}>
-          Pertanyaan
+          {CATEGORY_LABEL[q.category]}
         </div>
         <h2 style={{
-          fontFamily: 'Sora, sans-serif', fontWeight: 700, fontSize: 20,
-          color: 'white', lineHeight: 1.32, margin: '0 0 10px 0', position: 'relative',
+          fontFamily: 'Sora, sans-serif', fontWeight: 700, fontSize: 19,
+          color: 'white', lineHeight: 1.4, margin: 0, position: 'relative',
         }}>
           {q.title}
         </h2>
-        <p style={{ color: 'rgba(255,255,255,0.72)', fontSize: 12.5, lineHeight: 1.58, margin: 0, position: 'relative' }}>
-          {q.hint}
-        </p>
       </div>
 
       {/* Option cards */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 14 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {q.opts.map((opt, i) => {
           const isSelected = selected === i;
           const isDimmed = selected !== null && selected !== i;
@@ -188,9 +180,9 @@ function QuestionCard({ q, onPick }: { q: Question; onPick: (weight: number) => 
               whileTap={selected === null ? { scale: 0.97 } : {}}
               style={{
                 background: isSelected ? `${q.themeColor}09` : 'white',
-                borderRadius: 18,
+                borderRadius: 16,
                 padding: '16px 16px',
-                display: 'flex', alignItems: 'center', gap: 14,
+                display: 'flex', alignItems: 'center', gap: 12,
                 cursor: selected === null ? 'pointer' : 'default',
                 border: isSelected ? `2.5px solid ${q.themeColor}` : '2px solid transparent',
                 opacity: isDimmed ? 0.42 : 1,
@@ -198,28 +190,14 @@ function QuestionCard({ q, onPick }: { q: Question; onPick: (weight: number) => 
                 boxShadow: isSelected
                   ? `0 0 0 5px ${q.themeColor}18, 0 4px 16px rgba(0,0,0,0.06)`
                   : '0 2px 12px rgba(0,0,0,0.06)',
-                position: 'relative', overflow: 'hidden',
               }}
             >
-              {/* Emoji icon */}
-              <div style={{
-                width: 54, height: 54, borderRadius: 15,
-                background: `${q.themeColor}14`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 26, flexShrink: 0,
-              }}>
-                {opt.emoji}
-              </div>
-
               <div style={{ flex: 1 }}>
                 <div style={{
-                  fontFamily: 'Sora, sans-serif', fontWeight: 600,
-                  fontSize: 14.5, color: '#1A1A2E', lineHeight: 1.35,
+                  fontFamily: 'Inter, sans-serif', fontWeight: 500,
+                  fontSize: 14, color: '#1A1A2E', lineHeight: 1.45,
                 }}>
                   {opt.label}
-                </div>
-                <div style={{ fontSize: 11.5, color: '#6B7280', marginTop: 4, lineHeight: 1.45 }}>
-                  {opt.desc}
                 </div>
               </div>
 
@@ -231,13 +209,13 @@ function QuestionCard({ q, onPick }: { q: Question; onPick: (weight: number) => 
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                     style={{
-                      width: 30, height: 30, borderRadius: '50%',
+                      width: 28, height: 28, borderRadius: '50%',
                       background: q.themeColor,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       flexShrink: 0, boxShadow: `0 2px 10px ${q.themeColor}55`,
                     }}
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
                   </motion.div>
@@ -247,29 +225,6 @@ function QuestionCard({ q, onPick }: { q: Question; onPick: (weight: number) => 
           );
         })}
       </div>
-
-      {/* Fun fact reveal */}
-      <AnimatePresence>
-        {showFact && (
-          <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.97 }}
-            transition={{ duration: 0.3 }}
-            style={{
-              borderRadius: 16, padding: '12px 15px',
-              background: `${q.themeColor}0F`,
-              border: `1.5px solid ${q.themeColor}2A`,
-              display: 'flex', gap: 10, alignItems: 'flex-start',
-            }}
-          >
-            <span style={{ fontSize: 18, lineHeight: 1.4, flexShrink: 0 }}>💡</span>
-            <p style={{ fontSize: 12.5, color: q.themeColor, lineHeight: 1.58, margin: 0, fontWeight: 500 }}>
-              {q.funFact}
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
@@ -463,13 +418,11 @@ function SliderCard({ nq, onSubmit }: { nq: NumericQuestion; onSubmit: (value: n
 
         {/* Custom slider track */}
         <div style={{ position: 'relative', height: 36, marginBottom: 10 }}>
-          {/* Gradient track */}
           <div style={{
             position: 'absolute', top: '50%', left: 0, right: 0,
             height: 10, borderRadius: 999, transform: 'translateY(-50%)',
             background: 'linear-gradient(to right, #10B981 0%, #F59E0B 50%, #EF4444 100%)',
           }} />
-          {/* Custom thumb */}
           <div style={{
             position: 'absolute', top: '50%',
             left: `${pct * 100}%`,
@@ -482,7 +435,6 @@ function SliderCard({ nq, onSubmit }: { nq: NumericQuestion; onSubmit: (value: n
             pointerEvents: 'none',
             zIndex: 2,
           }} />
-          {/* Invisible input */}
           <input
             type="range"
             min={nq.min} max={nq.max} step={nq.step} value={value}

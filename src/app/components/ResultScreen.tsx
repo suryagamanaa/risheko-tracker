@@ -1,19 +1,31 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
-import type { Segment, RiskResult, Tip, Profile } from '../App';
+import type { Segment, RiskResult, Insights, Profile } from '../App';
 
 interface Props {
   segment: Segment;
   profile: Profile;
   risk: RiskResult;
-  tips: Tip[];
+  insights: Insights;
   onReset: () => void;
 }
 
-export function ResultScreen({ segment, profile, risk, tips, onReset }: Props) {
+const CATEGORY_META: { key: 'pengetahuan' | 'sikap' | 'perilaku'; label: string; icon: string }[] = [
+  { key: 'pengetahuan', label: 'Pengetahuan', icon: '🧠' },
+  { key: 'sikap', label: 'Sikap', icon: '💬' },
+  { key: 'perilaku', label: 'Perilaku', icon: '🚶' },
+];
+
+function bandFromScore(score: number): { color: string; bg: string; label: string } {
+  if (score <= 2) return { color: '#10B981', bg: '#DCFCE7', label: 'Baik' };
+  if (score <= 4) return { color: '#F59E0B', bg: '#FEF3C7', label: 'Cukup' };
+  return { color: '#EF4444', bg: '#FEE2E2', label: 'Perlu perhatian' };
+}
+
+export function ResultScreen({ segment, profile, risk, insights, onReset }: Props) {
   const [displayAmt, setDisplayAmt] = useState(0);
-  const [ctaDone, setCtaDone] = useState(false);
+  const [ctaDone, setCtaDone] = useState<Record<number, boolean>>({});
   const animatedRef = useRef(false);
 
   useEffect(() => {
@@ -40,7 +52,7 @@ export function ResultScreen({ segment, profile, risk, tips, onReset }: Props) {
     setTimeout(() => requestAnimationFrame(tick), 500);
   }, [risk.exposure, risk.level]);
 
-  const { level, color, needleAngle } = risk;
+  const { level, color } = risk;
 
   const levelConfig: Record<string, { emoji: string; tagline: string; headerBg: string }> = {
     SIAGA: {
@@ -62,40 +74,7 @@ export function ResultScreen({ segment, profile, risk, tips, onReset }: Props) {
 
   const cfg = levelConfig[level];
 
-  const MICROSITE_URL = 'https://microsite-she-up.vercel.app/';
-
-  const ctaMap: Record<string, { note: string; label: string }> = {
-    'SIAGA-A': {
-      note: 'Kondisi usahamu sudah cukup baik! Pelajari cara mempertahankan dan memperkuat proteksi aset & usaha rumahanmu.',
-      label: 'Yuk buka Microsite SHEaga untuk tingkatkan proteksi usahamu →',
-    },
-    'WASPADA-A': {
-      note: 'Ada beberapa celah risiko di usahamu. Temukan edukasi & solusi asuransi yang tepat untuk ibu rumah tangga seperti kamu.',
-      label: 'Yuk buka Microsite SHEaga untuk lindungi usahamu →',
-    },
-    'GENTING-A': {
-      note: 'Usahamu membutuhkan perlindungan segera. Temukan produk asuransi UMKM yang sesuai budget di microsite kami.',
-      label: 'Yuk buka Microsite SHEaga untuk mulai proteksi usahamu →',
-    },
-    'SIAGA-B': {
-      note: 'Kamu sudah di jalur yang tepat! Tingkatkan literasi finansialmu dan eksplorasi langkah proteksi berikutnya.',
-      label: 'Yuk buka Microsite SHEaga untuk tingkatkan literasi finansialmu →',
-    },
-    'WASPADA-B': {
-      note: 'Beberapa hal perlu diperhatikan. Ikuti kelas literasi & simulasi risiko yang disiapkan khusus untuk kamu.',
-      label: 'Yuk buka Microsite SHEaga untuk pelajari manajemen risikomu →',
-    },
-    'GENTING-B': {
-      note: 'Perlu tindakan cepat! Mulai dari edukasi finansial & simulasi proteksi yang tepat untuk kondisimu sekarang.',
-      label: 'Yuk buka Microsite SHEaga untuk mulai perjalanan finansialmu →',
-    },
-  };
-
-  const ctaCfg = ctaMap[`${level}-${segment}`] ?? ctaMap['WASPADA-B'];
-
   // Personalisasi teks pakai nama panggilan, biar hasilnya terasa buat dia sendiri.
-  // Nama di sini sudah berupa "nama panggilan" (bukan nama lengkap), jadi dipakai
-  // apa adanya tanpa dipotong ke kata pertama.
   const callName = profile.name?.trim() || '';
   const personalize = (text: string) =>
     callName ? `${callName}, ${text.charAt(0).toLowerCase()}${text.slice(1)}` : text;
@@ -110,7 +89,6 @@ export function ResultScreen({ segment, profile, risk, tips, onReset }: Props) {
         borderBottomLeftRadius: 32, borderBottomRightRadius: 32,
         textAlign: 'center', position: 'relative', overflow: 'hidden',
       }}>
-        {/* Decorative elements */}
         <div style={{ position: 'absolute', right: -24, top: -24, width: 160, height: 160, borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }} />
         <div style={{ position: 'absolute', left: -16, bottom: -16, width: 110, height: 110, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
 
@@ -118,7 +96,6 @@ export function ResultScreen({ segment, profile, risk, tips, onReset }: Props) {
           {profile.name ? `Hasil Cek Risiko · ${profile.name}` : 'Hasil Cek Risiko'}
         </div>
 
-        {/* Level badge */}
         <motion.div
           initial={{ scale: 0.65, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -149,24 +126,54 @@ export function ResultScreen({ segment, profile, risk, tips, onReset }: Props) {
 
       <div style={{ padding: '16px 16px 0' }}>
 
-        {/* Gauge card */}
+        {/* 3 mini bar per kategori: Pengetahuan / Sikap / Perilaku */}
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          style={{ background: 'white', borderRadius: 22, padding: '20px 16px 14px', marginBottom: 12, boxShadow: '0 2px 14px rgba(0,0,0,0.07)' }}
+          style={{ background: 'white', borderRadius: 22, padding: '18px 18px', marginBottom: 12, boxShadow: '0 2px 14px rgba(0,0,0,0.07)' }}
         >
-          <div style={{ fontSize: 12, color: '#6B7280', textAlign: 'center', marginBottom: 4, fontWeight: 500 }}>
-            {segment === 'A' ? 'Gambaran risiko usahamu' : 'Gambaran risiko finansialmu'}
+          <div style={{ fontFamily: 'Sora, sans-serif', fontWeight: 700, fontSize: 12.5, color: '#1A1A2E', marginBottom: 14 }}>
+            Gambaran per aspek
           </div>
-          <GaugeMeter needleAngle={needleAngle} color={color} level={level} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {CATEGORY_META.map((cat, i) => {
+              const score = risk.categoryScores[cat.key];
+              const band = bandFromScore(score);
+              const pct = (score / 6) * 100;
+              return (
+                <div key={cat.key}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: '#1A1A2E', fontWeight: 600 }}>
+                      <span>{cat.icon}</span>
+                      <span>{cat.label}</span>
+                    </div>
+                    <span style={{
+                      fontSize: 10.5, fontWeight: 700, color: band.color,
+                      background: band.bg, padding: '2px 9px', borderRadius: 999,
+                    }}>
+                      {band.label}
+                    </span>
+                  </div>
+                  <div style={{ height: 8, borderRadius: 999, background: '#F0F0F0', overflow: 'hidden' }}>
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${pct}%` }}
+                      transition={{ delay: 0.3 + i * 0.12, duration: 0.7, ease: [0.2, 0.8, 0.2, 1] }}
+                      style={{ height: '100%', borderRadius: 999, background: band.color }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </motion.div>
 
         {/* Exposure amount */}
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
+          transition={{ delay: 0.35 }}
           style={{
             background: 'white', borderRadius: 20, padding: '18px 20px',
             marginBottom: 12, boxShadow: '0 2px 14px rgba(0,0,0,0.07)', textAlign: 'center',
@@ -185,175 +192,119 @@ export function ResultScreen({ segment, profile, risk, tips, onReset }: Props) {
           </div>
         </motion.div>
 
-        {/* Tips section */}
-        <div style={{ marginBottom: 12 }}>
-          <div style={{
-            fontFamily: 'Sora, sans-serif', fontWeight: 700, fontSize: 13.5,
-            color: '#1A1A2E', marginBottom: 10, paddingLeft: 2,
-          }}>
-            Langkah yang bisa kamu mulai sekarang 👇
+        {/* Kekuatan */}
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.45 }}
+          style={{ marginBottom: 12 }}
+        >
+          <div style={{ fontFamily: 'Sora, sans-serif', fontWeight: 700, fontSize: 13.5, color: '#1A1A2E', marginBottom: 10, paddingLeft: 2 }}>
+            Kelebihanmu 💪
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {tips.map((tip, i) => (
+            {insights.strengths.map((item, i) => (
+              <div key={i} style={{
+                background: 'white', borderRadius: 16, padding: '14px 16px',
+                boxShadow: '0 2px 10px rgba(0,0,0,0.05)', border: '1.5px solid #10B98118',
+              }}>
+                <div style={{ fontFamily: 'Sora, sans-serif', fontWeight: 600, fontSize: 13, color: '#047857', marginBottom: 3 }}>
+                  {item.title}
+                </div>
+                <div style={{ fontSize: 12, color: '#6B7280', lineHeight: 1.55 }}>{item.desc}</div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Perlu ditingkatkan */}
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.55 }}
+          style={{ marginBottom: 12 }}
+        >
+          <div style={{ fontFamily: 'Sora, sans-serif', fontWeight: 700, fontSize: 13.5, color: '#1A1A2E', marginBottom: 10, paddingLeft: 2 }}>
+            Perlu ditingkatkan 🎯
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {insights.improvements.map((item, i) => (
+              <div key={i} style={{
+                background: 'white', borderRadius: 16, padding: '14px 16px',
+                boxShadow: '0 2px 10px rgba(0,0,0,0.05)', border: '1.5px solid #F59E0B18',
+              }}>
+                <div style={{ fontFamily: 'Sora, sans-serif', fontWeight: 600, fontSize: 13, color: '#B45309', marginBottom: 3 }}>
+                  {item.title}
+                </div>
+                <div style={{ fontSize: 12, color: '#6B7280', lineHeight: 1.55 }}>{item.desc}</div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Rekomendasi — rule-based, bisa lebih dari 1 */}
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontFamily: 'Sora, sans-serif', fontWeight: 700, fontSize: 13.5, color: '#1A1A2E', marginBottom: 10, paddingLeft: 2 }}>
+            Langkah selanjutnya 👇
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {insights.recommendations.map((rec, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.65 + i * 0.16 }}
+                transition={{ delay: 0.65 + i * 0.12 }}
                 style={{
-                  background: 'white', borderRadius: 18,
-                  padding: '14px 16px', display: 'flex', gap: 13, alignItems: 'flex-start',
-                  boxShadow: '0 2px 10px rgba(0,0,0,0.055)',
-                  border: `1.5px solid ${tip.color}18`,
+                  background: 'linear-gradient(140deg, #0A2A6E 0%, #0050A0 100%)',
+                  borderRadius: 20, padding: '18px 16px',
+                  textAlign: 'center', overflow: 'hidden', position: 'relative',
                 }}
               >
-                <div style={{
-                  width: 46, height: 46, borderRadius: 14,
-                  background: `${tip.color}12`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 22, flexShrink: 0,
-                }}>
-                  {tip.icon}
+                <div style={{ position: 'absolute', right: -20, top: -20, width: 100, height: 100, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
+
+                <div style={{ fontSize: 26, marginBottom: 6, position: 'relative' }}>{rec.icon}</div>
+                <div style={{ fontFamily: 'Sora, sans-serif', fontWeight: 700, fontSize: 14, color: 'white', marginBottom: 6, position: 'relative' }}>
+                  {rec.title}
                 </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{
-                    fontFamily: 'Sora, sans-serif', fontWeight: 600,
-                    fontSize: 13.5, color: '#1A1A2E', lineHeight: 1.38, marginBottom: 4,
-                  }}>
-                    {tip.title}
-                  </div>
-                  <div style={{ fontSize: 12, color: '#6B7280', lineHeight: 1.58 }}>
-                    {tip.desc}
-                  </div>
-                </div>
+                <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', lineHeight: 1.6, marginBottom: 14, position: 'relative' }}>
+                  {rec.desc}
+                </p>
+
+                <AnimatePresence mode="wait">
+                  {!ctaDone[i] ? (
+                    <motion.button
+                      key="cta"
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => {
+                        setCtaDone(prev => ({ ...prev, [i]: true }));
+                        window.open(rec.ctaUrl, '_blank', 'noopener,noreferrer');
+                      }}
+                      style={{
+                        width: '100%', padding: '13px 14px',
+                        borderRadius: 13, border: 'none', cursor: 'pointer',
+                        background: 'linear-gradient(135deg, #00D2FF 0%, #0050A0 100%)',
+                        color: 'white', fontFamily: 'Sora, sans-serif',
+                        fontWeight: 700, fontSize: 12.5, position: 'relative',
+                        boxShadow: '0 4px 18px rgba(0,210,255,0.3)',
+                      }}
+                    >
+                      {rec.ctaLabel} →
+                    </motion.button>
+                  ) : (
+                    <motion.div
+                      key="done"
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      style={{ color: '#7DD3FC', fontSize: 12.5, fontWeight: 600, position: 'relative' }}
+                    >
+                      ✓ Sudah dibuka di tab baru
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.div>
             ))}
           </div>
         </div>
-
-        {/* CTA box — Microsite SHEaga */}
-        <motion.div
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.1 }}
-          style={{
-            background: 'linear-gradient(140deg, #0A2A6E 0%, #0050A0 100%)',
-            borderRadius: 22, padding: '20px 18px', marginBottom: 12,
-            textAlign: 'center', overflow: 'hidden', position: 'relative',
-          }}
-        >
-          {/* Decorative blobs */}
-          <div style={{ position: 'absolute', right: -20, top: -20, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
-          <div style={{ position: 'absolute', left: -16, bottom: -16, width: 80, height: 80, borderRadius: '50%', background: 'rgba(0,210,255,0.08)' }} />
-
-          {/* Badge */}
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            background: 'rgba(0,210,255,0.2)', border: '1px solid rgba(0,210,255,0.3)',
-            borderRadius: 999, padding: '4px 12px', marginBottom: 10, position: 'relative',
-          }}>
-            <span style={{ fontSize: 14 }}>🌐</span>
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#00D2FF', letterSpacing: '0.5px' }}>
-              MICROSITE SHEaga
-            </span>
-          </div>
-
-          <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.82)', lineHeight: 1.65, marginBottom: 14, position: 'relative' }}>
-            {personalize(ctaCfg.note)}
-          </p>
-
-          <AnimatePresence mode="wait">
-            {!ctaDone ? (
-              <motion.button
-                key="cta"
-                whileTap={{ scale: 0.97 }}
-                whileHover={{ scale: 1.01 }}
-                onClick={() => {
-                  setCtaDone(true);
-                  window.open(MICROSITE_URL, '_blank', 'noopener,noreferrer');
-                }}
-                style={{
-                  width: '100%', padding: '15px 16px',
-                  borderRadius: 14, border: 'none', cursor: 'pointer',
-                  background: 'linear-gradient(135deg, #00D2FF 0%, #0050A0 100%)',
-                  color: 'white',
-                  fontFamily: 'Sora, sans-serif', fontWeight: 700, fontSize: 13.5,
-                  position: 'relative', lineHeight: 1.4,
-                  boxShadow: '0 4px 18px rgba(0,210,255,0.35)',
-                }}
-              >
-                {ctaCfg.label}
-              </motion.button>
-            ) : (
-              <motion.div
-                key="done"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                style={{ position: 'relative' }}
-              >
-                <div style={{ color: '#7DD3FC', fontSize: 13.5, fontWeight: 600, marginBottom: 10 }}>
-                  ✓ Oke! Microsite SHEaga sudah dibuka di tab baru 🚀
-                </div>
-                <motion.a
-                  href={MICROSITE_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  whileTap={{ scale: 0.97 }}
-                  style={{
-                    display: 'block', width: '100%', padding: '12px 16px',
-                    borderRadius: 12, border: '1.5px solid rgba(0,210,255,0.4)',
-                    background: 'rgba(0,210,255,0.12)',
-                    color: '#00D2FF', fontFamily: 'Sora, sans-serif',
-                    fontWeight: 600, fontSize: 12.5, textDecoration: 'none',
-                    textAlign: 'center', cursor: 'pointer',
-                  }}
-                >
-                  Buka lagi Microsite SHEaga →
-                </motion.a>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
-
-        {/* Score breakdown */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.3 }}
-          style={{
-            background: 'white', borderRadius: 18, padding: '14px 16px',
-            marginBottom: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
-          }}
-        >
-          <div style={{ fontFamily: 'Sora, sans-serif', fontWeight: 700, fontSize: 12, color: '#6B7280', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '1px' }}>
-            Skor Risiko
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{
-              fontFamily: 'Sora, sans-serif', fontWeight: 800, fontSize: 36,
-              color: color, lineHeight: 1,
-            }}>
-              {risk.score}
-            </div>
-            <div>
-              <div style={{ fontSize: 11.5, color: '#6B7280', lineHeight: 1.5 }}>dari 8 poin total</div>
-              <div style={{ display: 'inline-block', marginTop: 3, padding: '3px 10px', borderRadius: 999, background: color + '18', color: color, fontSize: 11, fontWeight: 700 }}>
-                {level}
-              </div>
-            </div>
-            <div style={{ flex: 1 }}>
-              {/* Mini score bar */}
-              <div style={{ height: 6, borderRadius: 999, background: '#F0F0F0', overflow: 'hidden' }}>
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${(risk.score / 8) * 100}%` }}
-                  transition={{ delay: 0.5, duration: 0.8, ease: [0.2, 0.8, 0.2, 1] }}
-                  style={{ height: '100%', borderRadius: 999, background: color }}
-                />
-              </div>
-            </div>
-          </div>
-        </motion.div>
 
         {/* Reset */}
         <div style={{ textAlign: 'center', marginBottom: 6 }}>
@@ -371,91 +322,9 @@ export function ResultScreen({ segment, profile, risk, tips, onReset }: Props) {
         </div>
 
         <p style={{ textAlign: 'center', fontSize: 10.5, color: '#9CA3AF', lineHeight: 1.6 }}>
-          🔒 Semua jawaban dihitung & tersimpan aman di perangkatmu, tidak dikirim ke server luar mana pun.
+          🔒 Jawabanmu tersimpan aman untuk keperluan riset SHE-UP.
         </p>
       </div>
-    </div>
-  );
-}
-
-function GaugeMeter({ needleAngle, color, level }: { needleAngle: number; color: string; level: string }) {
-  const [animated, setAnimated] = useState(false);
-
-  useEffect(() => {
-    const t = setTimeout(() => setAnimated(true), 350);
-    return () => clearTimeout(t);
-  }, []);
-
-  const finalNeedle = animated ? needleAngle : -90;
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <svg
-        width="240" height="138"
-        viewBox="0 0 240 138"
-        style={{ overflow: 'visible' }}
-      >
-        {/* Zone arcs - background */}
-        <path d="M22,122 A100,100 0 0,1 218,122" fill="none" stroke="#F0F0F0" strokeWidth="20" strokeLinecap="round" />
-        {/* Green zone */}
-        <path d="M22,122 A100,100 0 0,1 83,34" fill="none" stroke="#DCFCE7" strokeWidth="20" strokeLinecap="butt" />
-        {/* Yellow zone */}
-        <path d="M83,34 A100,100 0 0,1 157,34" fill="none" stroke="#FEF3C7" strokeWidth="20" strokeLinecap="butt" />
-        {/* Red zone */}
-        <path d="M157,34 A100,100 0 0,1 218,122" fill="none" stroke="#FEE2E2" strokeWidth="20" strokeLinecap="butt" />
-
-        {/* Active colored arc */}
-        <path
-          d="M22,122 A100,100 0 0,1 218,122"
-          fill="none"
-          stroke={color}
-          strokeWidth="7"
-          strokeLinecap="round"
-          strokeDasharray={`${((needleAngle + 90) / 180) * 314} 314`}
-          style={{
-            opacity: animated ? 1 : 0,
-            transition: 'stroke-dasharray 1.1s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.4s',
-          }}
-        />
-
-        {/* Needle */}
-        <line
-          x1="120" y1="122"
-          x2="120" y2="36"
-          stroke="#1A1A2E"
-          strokeWidth="4.5"
-          strokeLinecap="round"
-          style={{
-            transformOrigin: '120px 122px',
-            transform: `rotate(${finalNeedle}deg)`,
-            transition: 'transform 1.1s cubic-bezier(0.2, 0.8, 0.2, 1)',
-          }}
-        />
-        {/* Needle hub */}
-        <circle cx="120" cy="122" r="10" fill="#1A1A2E" />
-        <circle cx="120" cy="122" r="5" fill="white" />
-
-        {/* Zone labels */}
-        <text x="24" y="148" fill="#10B981" fontSize="9.5" fontWeight="700" fontFamily="Sora, sans-serif">SIAGA</text>
-        <text x="120" y="16" fill="#F59E0B" fontSize="9.5" fontWeight="700" fontFamily="Sora, sans-serif" textAnchor="middle">WASPADA</text>
-        <text x="216" y="148" fill="#EF4444" fontSize="9.5" fontWeight="700" fontFamily="Sora, sans-serif" textAnchor="end">GENTING</text>
-      </svg>
-
-      {/* Risk level pill */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.75 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.8, type: 'spring', stiffness: 200 }}
-        style={{
-          display: 'inline-flex', alignItems: 'center', gap: 6,
-          padding: '7px 20px', borderRadius: 999,
-          background: color, color: 'white',
-          fontFamily: 'Sora, sans-serif', fontWeight: 700, fontSize: 13,
-          marginTop: -4, boxShadow: `0 4px 14px ${color}55`,
-        }}
-      >
-        <span>Level Risiko: {level}</span>
-      </motion.div>
     </div>
   );
 }
