@@ -120,6 +120,31 @@ export const QUESTIONS: Record<Segment, Question[]> = {
         { label: 'Cari pinjaman online yang cepat cair', weight: 2 },
       ],
     },
+    {
+      key: 'afford_darurat',
+      theme: 'A',
+      category: 'sikap',
+      themeColor: '#0EA5E9',
+      title: 'Kira-kira, kamu sanggup nyisihin berapa buat dana darurat per hari?',
+      opts: [
+        { label: 'Di bawah Rp2.000 per hari', weight: 0 },
+        { label: 'Rp2.000 – Rp5.000 per hari', weight: 1 },
+        { label: 'Di atas Rp5.000 per hari', weight: 2 },
+      ],
+    },
+    {
+      key: 'afford_proteksi',
+      theme: 'A',
+      category: 'sikap',
+      themeColor: '#0EA5E9',
+      title: 'Kalau buat proteksi/asuransi, kira-kira kamu sanggup berapa per bulan?',
+      opts: [
+        { label: 'Belum sanggup sama sekali', weight: 0 },
+        { label: 'Di bawah Rp25.000 per bulan', weight: 1 },
+        { label: 'Rp25.000 – Rp50.000 per bulan', weight: 2 },
+        { label: 'Di atas Rp50.000 per bulan', weight: 3 },
+      ],
+    },
   ],
   B: [
     // ── TEMA A — Dana Darurat ──
@@ -295,8 +320,10 @@ export function computeRisk(segment: Segment, answers: Record<string, number>): 
   else if (totalScore <= 12) { level = 'WASPADA'; color = '#F59E0B'; needleAngle = 4; }
   else { level = 'GENTING'; color = '#EF4444'; needleAngle = 72; }
 
-  return { totalScore, level, color, needleAngle, exposure, categoryScores, themeScores };
-}
+  const affordDarurat = w('afford_darurat');
+  const affordProteksi = w('afford_proteksi');
+
+  return { totalScore, level, color, needleAngle, exposure, categoryScores, themeScores, affordDarurat, affordProteksi };}
 
 // ============================================================
 // INSIGHTS — 2 kekuatan + 2 area perlu ditingkatkan, dipilih dari
@@ -336,17 +363,25 @@ function buildCandidates(segment: Segment, risk: RiskResult): Candidate[] {
   const isA = segment === 'A';
   return [
     {
-      id: 'pengetahuan',
-      label: 'Pengetahuan Keuangan',
-      score: risk.categoryScores.pengetahuan,
-      strengthText: 'Kamu sudah cukup paham dasar-dasar pengelolaan keuangan yang ditanya di tes ini.',
-      improvementText: 'Beberapa konsep dasar keuangan (dana darurat, pencatatan, risiko pinjaman) masih perlu kamu pelajari lagi.',
+      id: 'A',
+      label: isA ? 'Dana Cadangan Usaha' : 'Dana Jaga-jaga',
+      score: risk.themeScores.A,
+      strengthText: isA
+        ? 'Kamu sudah cukup siap soal dana cadangan buat usahamu.'
+        : 'Kamu sudah cukup siap soal dana jaga-jaga pribadi.',
+      improvementText: isA
+        ? 'Dana cadangan khusus usaha (di luar kas harian) masih perlu diperkuat.'
+        : 'Dana jaga-jaga di luar uang jajan/gaji bulanan masih perlu diperkuat.',
       recommendation: {
-        title: 'Perdalam pengetahuanmu dulu',
-        desc: 'Beberapa hal dasar soal pengelolaan keuangan masih perlu kamu pahami. Yuk mulai dari edukasi & berita yang ringan dulu.',
-        ctaLabel: 'Buka Microsite SHEaga — Edukasi & Berita',
+        title: isA ? 'Mulai bangun dana cadangan usaha' : 'Mulai bangun dana jaga-jaga',
+        desc: (() => {
+          const nominal = risk.affordDarurat === 0 ? 'Rp2.000' : risk.affordDarurat === 1 ? 'Rp2.000–5.000' : 'Rp5.000+';
+          const target = isA ? 'usaha' : 'pribadi';
+          return `Dari jawabanmu, kamu sanggup nyisihin sekitar ${nominal} per hari — itu udah cukup buat mulai. Konsisten tiap hari lebih penting daripada nominalnya besar, langsung aja mulai dari situ buat dana ${target}mu.`;
+        })(),
+        ctaLabel: 'Pelajari Dana Darurat di SHEaga',
         ctaUrl: MICROSITE_BASE,
-        icon: '📚',
+        icon: '💰',
       },
     },
     {
@@ -450,13 +485,22 @@ const FALLBACK_RECOMMENDATION: Recommendation = {
   icon: '🏆',
 };
 
-const PROTEKSI_RECOMMENDATION: Recommendation = {
-  title: 'Saatnya pikirkan proteksi',
-  desc: 'Pemahaman & sikapmu soal keuangan udah cukup baik — sekarang saatnya lirik perlindungan (asuransi/proteksi) buat jaga apa yang udah kamu bangun.',
-  ctaLabel: 'Buka Microsite SHEaga — Proteksi & Asuransi',
-  ctaUrl: MICROSITE_BASE,
-  icon: '🛡️',
-};
+function buildProteksiRecommendation(risk: RiskResult): Recommendation {
+  const nominalText = [
+    'Nggak apa-apa mulai dari yang gratis/edukasi dulu sebelum ambil produk berbayar.',
+    'Ada produk proteksi mikro yang preminya di bawah Rp25.000/bulan, cocok buat mulai.',
+    'Dengan Rp25.000–50.000/bulan, kamu punya beberapa pilihan produk proteksi dasar.',
+    'Dengan bujet di atas Rp50.000/bulan, kamu bisa pilih proteksi yang lebih lengkap.',
+  ][risk.affordProteksi] ?? 'Cek pilihan proteksi yang sesuai bujetmu di microsite.';
+
+  return {
+    title: 'Saatnya pikirkan proteksi',
+    desc: `Pemahaman & sikapmu soal keuangan udah cukup baik — sekarang saatnya lirik perlindungan. ${nominalText}`,
+    ctaLabel: 'Buka Microsite SHEaga — Proteksi & Asuransi',
+    ctaUrl: MICROSITE_BASE,
+    icon: '🛡️',
+  };
+}
 
 export function computeInsights(segment: Segment, risk: RiskResult): Insights {
   const candidates = buildCandidates(segment, risk);
@@ -507,7 +551,7 @@ function buildRecommendations(segment: Segment, risk: RiskResult, weakest2: Cand
   const hasDecentIncome = risk.exposure > 0;
   const pengetahuanRendah = categoryScores.pengetahuan >= 4;
   if (!allGood && !pengetahuanRendah && sikapBagus && hasDecentIncome && recs.length < 3) {
-    recs.push(PROTEKSI_RECOMMENDATION);
+    recs.push(buildProteksiRecommendation(risk));
   }
 
   // Hindari duplikat judul (misal 2 kandidat terlemah kebetulan kasih rekomendasi yang sama)

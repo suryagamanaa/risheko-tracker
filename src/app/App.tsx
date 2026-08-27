@@ -11,7 +11,6 @@ export type Segment = 'A' | 'B';
 export type Phase = 'home' | 'questions' | 'scanning' | 'result';
 export type QuestionTheme = 'A' | 'B' | 'C';
 export type QuestionCategory = 'pengetahuan' | 'sikap' | 'perilaku';
-
 export interface Profile {
   name: string;
   age: number;
@@ -43,13 +42,15 @@ export interface NumericQuestion {
 }
 
 export interface RiskResult {
-  totalScore: number; // 0-18, dari 9 pertanyaan x weight maks 2
+  totalScore: number;
   level: 'SIAGA' | 'WASPADA' | 'GENTING';
   color: string;
   needleAngle: number;
   exposure: number;
-  categoryScores: { pengetahuan: number; sikap: number; perilaku: number }; // masing² 0-6
-  themeScores: { A: number; B: number; C: number }; // masing² 0-6
+  categoryScores: { pengetahuan: number; sikap: number; perilaku: number };
+  themeScores: { A: number; B: number; C: number };
+  affordDarurat: number;   // 0-2: tier kemampuan nyisihin dana darurat/hari
+  affordProteksi: number;  // 0-3: tier kemampuan bayar proteksi/bulan
 }
 
 export interface InsightItem {

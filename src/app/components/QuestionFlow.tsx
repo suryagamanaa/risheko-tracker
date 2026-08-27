@@ -127,6 +127,7 @@ const CATEGORY_LABEL: Record<string, string> = {
   pengetahuan: 'Pengetahuan',
   sikap: 'Sikap',
   perilaku: 'Perilaku',
+  afordabilitas: 'Kesiapan Finansial',
 };
 
 function QuestionCard({ q, onPick }: { q: Question; onPick: (weight: number) => void }) {
