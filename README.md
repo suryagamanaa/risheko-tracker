@@ -1,7 +1,9 @@
 
   # RISHEKO TRACKER
 
-  This is a code bundle for RISHEKO TRACKER. The original project is available at https://www.figma.com/design/taosOwTuW7HqcbRIQAWHwl/RISHEKO-TRACKER.
+  This is a code bundle for RISHEKO TRACKER. The final form of project is available at https://risheko-tracker.vercel.app/.
+
+  
 
   ## Running the code
 
